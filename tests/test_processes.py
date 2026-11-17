@@ -31,7 +31,7 @@ def test_ar1_seed_reproducible():
 
 @pytest.mark.parametrize("kwargs", [{"mean_reversion": 0}, {"volatility": -1}, {"dt": 0}, {"paths": 0}])
 def test_ou_invalid(kwargs):
-    inputs = dict(initial=1, long_run_mean=0, mean_reversion=1, volatility=1)
+    inputs = {"initial": 1, "long_run_mean": 0, "mean_reversion": 1, "volatility": 1}
     inputs.update(kwargs)
     with pytest.raises(ValueError):
         ornstein_uhlenbeck(**inputs)
