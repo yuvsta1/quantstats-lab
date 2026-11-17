@@ -13,7 +13,7 @@ import matplotlib
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -630,10 +630,13 @@ class MainWindow(QMainWindow):
 
 
 def main() -> int:
-    app = QApplication.instance() or QApplication(sys.argv)
+    smoke = "--smoke-test" in sys.argv
+    app = QApplication.instance() or QApplication([] if smoke else sys.argv)
     app.setApplicationName("QuantStats Lab")
     window = MainWindow()
     window.show()
+    if smoke:
+        QTimer.singleShot(750, app.quit)
     return app.exec()
 
 
