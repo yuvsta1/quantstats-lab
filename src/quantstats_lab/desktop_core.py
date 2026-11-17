@@ -47,9 +47,7 @@ def read_return_columns(path: str | Path) -> dict[str, NDArray[np.float64]]:
             if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames):
                 raise ValueError("CSV must have unique column headers")
             columns: dict[str, list[str]] = {name: [] for name in reader.fieldnames}
-            count = 0
-            for record in reader:
-                count += 1
+            for count, record in enumerate(reader, start=1):
                 if count > MAX_CSV_ROWS:
                     raise ValueError("CSV exceeds the 100,000-row limit")
                 if None in record:
