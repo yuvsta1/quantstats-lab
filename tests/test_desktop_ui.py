@@ -8,7 +8,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 pytest.importorskip("PySide6")
 pytest.importorskip("matplotlib")
 
-from PySide6.QtWidgets import QAbstractSpinBox, QApplication, QToolButton  # noqa: E402
+from PySide6.QtTest import QTest  # noqa: E402
+from PySide6.QtWidgets import QApplication, QLineEdit, QToolButton  # noqa: E402
 
 from quantstats_lab.desktop import MainWindow, logo_path  # noqa: E402
 
@@ -71,14 +72,72 @@ def test_theme_toggle(window):
     assert window.dark != old
 
 
-def test_compact_numeric_editors_have_no_spinner_dots(window):
-    assert window.sim_initial.buttonSymbols() == QAbstractSpinBox.ButtonSymbols.NoButtons
-    assert window.sim_steps.buttonSymbols() == QAbstractSpinBox.ButtonSymbols.NoButtons
-    assert window.seed.buttonSymbols() == QAbstractSpinBox.ButtonSymbols.NoButtons
+def test_numeric_editors_are_real_read_write_text_fields(window):
+    for field in (
+        window.sim_initial, window.sim_drift, window.sim_steps, window.seed,
+        window.dist_x, window.inf_null, window.proc_initial, window.risk_conf,
+    ):
+        assert isinstance(field, QLineEdit)
+        assert not field.isReadOnly()
+        assert field.focusPolicy().name == "StrongFocus"
     assert window.sim_initial.text() == "100"
     assert window.sim_drift.text() == "0.06"
     assert window.sim_volatility.text() == "0.2"
     assert window.sim_initial.minimumHeight() >= 30
+
+
+def test_user_can_type_decimal_and_integer_values_using_keyboard(window):
+    """Regression for v0.2.1: QTest sends actual Qt key events to the visible inputs."""
+    window.show()
+    window.navigation.setCurrentRow(1)
+    QApplication.processEvents()
+
+    decimal = window.sim_initial
+    decimal.setFocus()
+    decimal.selectAll()
+    QTest.keyClicks(decimal, "1250.75")
+    assert decimal.text() == "1250.75"
+    assert decimal.value() == pytest.approx(1250.75)
+
+    integer = window.sim_steps
+    integer.setFocus()
+    integer.selectAll()
+    QTest.keyClicks(integer, "365")
+    assert integer.text() == "365"
+    assert integer.value() == 365
+
+    window.calculate("simulation")
+    assert "simulation" in window.exports
+
+
+def test_text_editing_stays_available_in_light_mode(window):
+    window.show()
+    window.navigation.setCurrentRow(1)
+    window.toggle_theme()
+    QApplication.processEvents()
+    field = window.sim_drift
+    field.setFocus()
+    field.selectAll()
+    QTest.keyClicks(field, "-0.015")
+    assert field.text() == "-0.015"
+    assert field.value() == pytest.approx(-0.015)
+
+
+@pytest.mark.parametrize("value", ["", "hello", "nan", "inf", "-5", "1000000001"])
+def test_numeric_input_explains_invalid_values(window, value):
+    field = window.sim_initial
+    field.setText(value)
+    with pytest.raises(ValueError):
+        field.value()
+
+
+def test_integer_input_requires_whole_number(window):
+    field = window.sim_steps
+    field.setText("3.5")
+    with pytest.raises(ValueError, match="valid number"):
+        field.value()
+    field.setText("126")
+    assert field.value() == 126
 
 
 def test_compact_chart_toolbar_replaces_large_icon_strip(window):
