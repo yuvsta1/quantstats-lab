@@ -48,6 +48,10 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
+      - name: Install Linux Qt system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libegl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0
       - name: Install optional GUI dependencies
         run: python -m pip install -e ".[desktop,dev]"
       - name: Native Qt smoke tests
