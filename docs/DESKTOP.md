@@ -6,7 +6,7 @@
 - `quantstats_lab.desktop_core`: independent strict text / CSV input and CSV export helpers.
 - Existing distribution, inference, process, simulation and risk Python APIs remain the single source of numerical calculations.
 - Embedded Matplotlib Qt canvas provides pan/zoom/save, line/bar/fan/drawdown charts.
-- `assets/logo-original.png` preserves a losslessly cropped and optimised raster derivative of the user-supplied navy/turquoise/white logo, including its transparent rounded background. `scripts/make_macos_icon.py` produces the retina icon sizes and macOS `.icns` for Dock and Finder. A design-reference vector is also available in `assets/logo.svg`.
+- `assets/logo-original.png` preserves a cropped, resized and optimised raster derivative of the user-supplied navy/turquoise/white logo, including its transparent rounded background. `scripts/make_macos_icon.py` produces the retina icon sizes and macOS `.icns` for Dock and Finder. A design-reference vector is also available in `assets/logo.svg`.
 - `src/quantstats_lab/app.py` (Streamlit) is retained as a separately installable legacy interface.
 
 ## Build a standalone macOS .app
@@ -34,7 +34,7 @@ The app bundles the Python runtime, Qt, NumPy/SciPy and Matplotlib. Users do not
 ## Download GitHub Actions builds
 
 The `macOS Desktop App` workflow runs on an **Apple Silicon macOS 15** runner, tests desktop UI offscreen,
-renders a retina iconset, generates a `.app` with PyInstaller, checks the bundle layout, and uploads a ZIP artifact.
+renders a retina iconset, generates a `.app` with PyInstaller, checks the bundle layout, starts and stops the packaged application in headless smoke-test mode, and uploads a ZIP artifact.
 
 Artifacts are CI development builds, **not** officially released or notarised distributions. Downloading from an
 untrusted branch or pull request may be unsafe. The artifact expires according to GitHub retention settings.
