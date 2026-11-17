@@ -14,7 +14,7 @@ from .processes import autoregressive_one, ornstein_uhlenbeck
 from .risk import PerformanceMetrics, TailRisk, drawdown_series, historical_var_es, performance_metrics
 from .simulation import SimulationResult, bootstrap_returns, geometric_brownian_motion
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __all__ = [
     "ConfidenceInterval",
     "DistributionResult",
