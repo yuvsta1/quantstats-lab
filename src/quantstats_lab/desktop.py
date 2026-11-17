@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import (
+    __version__,
     autoregressive_one,
     benjamini_hochberg,
     bootstrap_mean_interval,
@@ -54,7 +55,6 @@ from . import (
     t_mean_interval,
     welch_ttest,
 )
-from . import __version__
 from .desktop_core import parse_observations, read_return_columns, write_csv
 
 matplotlib.use("QtAgg")
@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
             "simulation, inference and descriptive risk analytics.\n\n"
             "Quantitative outputs are educational and model-based, not trading signals, "
             "investment advice or guaranteed forecasts.\n\n"
-            "MIT License · Version 0.1.0\n\n" + ACKNOWLEDGEMENT
+            f"MIT License · Version {__version__}\n\n" + ACKNOWLEDGEMENT
         )
         info.setWordWrap(True)
         info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
