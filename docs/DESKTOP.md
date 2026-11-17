@@ -6,7 +6,7 @@
 - `quantstats_lab.desktop_core`: independent strict text / CSV input and CSV export helpers.
 - Existing distribution, inference, process, simulation and risk Python APIs remain the single source of numerical calculations.
 - Embedded Matplotlib Qt canvas provides pan/zoom/save, line/bar/fan/drawdown charts.
-- `assets/logo.svg` is a vector redraw referenced to the user's supplied navy, turquoise and white original logo; `scripts/make_macos_icon.py` produces retina icon sizes and a macOS `.icns` for Dock and Finder.
+- `assets/logo-original.png` preserves a losslessly cropped and optimised raster derivative of the user-supplied navy/turquoise/white logo, including its transparent rounded background. `scripts/make_macos_icon.py` produces the retina icon sizes and macOS `.icns` for Dock and Finder. A design-reference vector is also available in `assets/logo.svg`.
 - `src/quantstats_lab/app.py` (Streamlit) is retained as a separately installable legacy interface.
 
 ## Build a standalone macOS .app
@@ -23,7 +23,7 @@ python scripts/make_macos_icon.py
 python -m PyInstaller --clean --noconfirm --onedir --windowed \
   --name "QuantStats Lab" \
   --icon "assets/logo.icns" \
-  --add-data "assets/logo.svg:assets" \
+  --add-data "assets/logo-original.png:assets" \
   --osx-bundle-identifier "io.github.yuvsta1.quantstatslab" \
   scripts/desktop_entry.py
 ```
