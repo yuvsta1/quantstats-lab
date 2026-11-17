@@ -6,6 +6,7 @@ No browser, web server, remote services, or market-data connection is used.
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -16,10 +17,8 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
-    QAbstractSpinBox,
     QApplication,
     QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -32,9 +31,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QLineEdit,
     QScrollArea,
     QSizePolicy,
-    QSpinBox,
     QSplitter,
     QStackedWidget,
     QStyleFactory,
@@ -88,46 +87,79 @@ def logo_pixmap(size: int) -> QPixmap:
     )
 
 
-class CompactDoubleSpinBox(QDoubleSpinBox):
-    """Show significant decimal digits without five trailing zeros or tiny spin arrows."""
+class NumericInput(QLineEdit):
+    """Keyboard-first numeric editor with validation at calculation time.
 
-    def textFromValue(self, value: float) -> str:
-        text = f"{value:.5f}".rstrip("0").rstrip(".")
-        return "0" if text in {"", "-0"} else text
+    Unlike a spin box, this accepts partial values during typing (e.g. "-", ".",
+    "1e-") and works with macOS keyboard input methods. Invalid entries are
+    rejected with a readable error by value(), never silently clamped.
+    """
+
+    def __init__(
+        self,
+        initial: float | int,
+        minimum: float | int,
+        maximum: float | int,
+        *,
+        integer: bool = False,
+    ) -> None:
+        super().__init__()
+        self._minimum = minimum
+        self._maximum = maximum
+        self._integer = integer
+        self.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.setMinimumHeight(30)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setReadOnly(False)
+        self.setToolTip("Enter a number; the value is checked when you run the analysis.")
+        self.setValue(initial)
+
+    def setValue(self, value: float | int) -> None:
+        """Match the former numeric control's programmatic setValue API."""
+        self.setText(str(int(value)) if self._integer else f"{float(value):.10g}")
+
+    def value(self) -> float | int:
+        """Parse the complete edit without blocking keyboard input in progress."""
+        raw = self.text().strip()
+        if not raw:
+            raise ValueError(f"{self.accessibleName() or 'This field'} requires a number.")
+        try:
+            if self._integer:
+                # int(...) intentionally rejects 12.5, 1e3, and fractional steps.
+                value: float | int = int(raw)
+            else:
+                value = float(raw)
+        except (ValueError, OverflowError) as exc:
+            raise ValueError(f"{self.accessibleName() or 'This field'} must be a valid number.") from exc
+        if not math.isfinite(value):
+            raise ValueError(f"{self.accessibleName() or 'This field'} must be finite.")
+        if value < self._minimum or value > self._maximum:
+            raise ValueError(
+                f"{self.accessibleName() or 'This field'} must be between "
+                f"{self._minimum:g} and {self._maximum:g}."
+            )
+        return value
 
 
 def add_field(form: QFormLayout, label: str, widget: QWidget) -> None:
     form.addRow(label, widget)
+    widget.setAccessibleName(label)
     field_label = form.labelForField(widget)
     if field_label is not None:
         field_label.setObjectName("fieldLabel")
 
 
-def number(form: QFormLayout, label: str, value: float, minimum: float = -1e9, maximum: float = 1e9) -> QDoubleSpinBox:
-    widget = CompactDoubleSpinBox()
-    widget.setRange(minimum, maximum)
-    widget.setDecimals(5)
-    widget.setSingleStep(0.05)
-    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
-    widget.setMinimumHeight(30)
-    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-    widget.setValue(value)
+def number(form: QFormLayout, label: str, value: float, minimum: float = -1e9, maximum: float = 1e9) -> NumericInput:
+    widget = NumericInput(value, minimum, maximum)
     add_field(form, label, widget)
     return widget
 
 
-def whole(form: QFormLayout, label: str, value: int, minimum: int = 1, maximum: int = 10000) -> QSpinBox:
-    widget = QSpinBox()
-    widget.setRange(minimum, maximum)
-    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
-    widget.setMinimumHeight(30)
-    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-    widget.setValue(value)
+def whole(form: QFormLayout, label: str, value: int, minimum: int = 1, maximum: int = 10000) -> NumericInput:
+    widget = NumericInput(value, minimum, maximum, integer=True)
     add_field(form, label, widget)
     return widget
-
 
 def choice(form: QFormLayout, label: str, options: list[str]) -> QComboBox:
     widget = QComboBox()
@@ -347,12 +379,8 @@ class MainWindow(QMainWindow):
         seed_label = QLabel("REPRODUCIBLE SEED")
         seed_label.setObjectName("sidebarCaption")
         side_layout.addWidget(seed_label)
-        self.seed = QSpinBox()
-        self.seed.setRange(0, 2_147_483_647)
-        self.seed.setValue(42)
-        self.seed.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
-        self.seed.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.seed.setMinimumHeight(30)
+        self.seed = NumericInput(42, 0, 2_147_483_647, integer=True)
+        self.seed.setAccessibleName("Reproducible seed")
         side_layout.addWidget(self.seed)
         side_layout.addSpacing(9)
         self.theme_switch = QPushButton("Switch to light mode")
@@ -410,7 +438,7 @@ class MainWindow(QMainWindow):
             [("scale", 1.0, 0.0001, 1e6)],
             [("shape", 0.5, 0.0001, 1e6), ("scale", 1.0, 0.0001, 1e6)],
         ]
-        self.dist_inputs: list[dict[str, QDoubleSpinBox | QSpinBox]] = []
+        self.dist_inputs: list[dict[str, NumericInput]] = []
         for i, fields in enumerate(specs):
             panel = QWidget()
             panel.setObjectName("parameterPanel")
