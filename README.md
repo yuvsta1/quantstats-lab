@@ -4,9 +4,9 @@
 
 > **AI development disclosure:** Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
 
-**Status:** `v0.1.0` — open-source quantitative workbench. Python 3.11–3.13. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
+**Status:** `v0.2.0` — native multi-platform quantitative workbench. Python 3.11–3.15. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
 
-QuantStats Lab couples a **small, typed Python calculation library** with a **native macOS desktop application** and an optional legacy **interactive Streamlit interface**. It is designed for students, researchers, quantitative developers and traders wanting transparent assumptions, seeded simulations and simple ways to inspect risks or probability models.
+QuantStats Lab couples a **small, typed Python calculation library** with **native Windows, macOS and Linux desktop applications** and an optional legacy **interactive Streamlit interface**. It is designed for students, researchers, quantitative developers and traders wanting transparent assumptions, seeded simulations and simple ways to inspect risks or probability models.
 
 ## Why use it?
 
@@ -28,34 +28,38 @@ This tool deliberately focuses on **learning and experimentation rather than bac
 | Processes | Exact Ornstein–Uhlenbeck transitions and stationary AR(1) simulations | Explore convergence and random paths |
 | Risk analytics | Empirical VaR/expected shortfall, Sharpe ratio, volatility, total/annualised return, maximum drawdown | Import CSV, view metrics/drawdown, export metrics |
 
-## Native macOS desktop app (Apple Silicon)
+## Download the desktop app — Windows, macOS and Linux
 
-**This is a separate, real desktop window built with PySide6/Qt, not a browser window or a web server.** It runs all calculations locally and does not require a login. Supports six distribution families, GBM and IID bootstrap simulation, Student-t and IID bootstrap inference, optional Welch and BH tests, exact OU/AR(1) simulation, and descriptive historical risk.
+**[Download the latest version from GitHub Releases](https://github.com/yuvsta1/quantstats-lab/releases/latest)**
 
-### Download and install the packaged Mac app
+Choose the file matching your computer. These are real standalone native desktop applications, not browser-based apps. Python does **not** need to be installed separately to run them.
 
-1. Open the [macOS Desktop App workflow](https://github.com/yuvsta1/quantstats-lab/actions/workflows/macos-desktop.yml).
-2. Choose a **successful run** on the appropriate branch or tag, and download the **QuantStats-Lab-macOS-Apple-Silicon** artifact ZIP.
-3. Unzip that artifact once to obtain `QuantStats-Lab-macOS-Apple-Silicon.zip`. Unzip that inner ZIP to obtain **QuantStats Lab.app**.
-4. Drag **QuantStats Lab.app** into the Mac's **Applications** folder.
-5. Launch from Applications. No Terminal, Python, Streamlit, network connection or browser is needed for normal use.
+| Platform | Download file | Install and launch |
+| --- | --- | --- |
+| **Windows 10/11, x64** | `QuantStats-Lab-vX.Y.Z-Windows-x64.exe` | Download and double-click the executable. No Python or Terminal needed. Unsigned downloads can prompt SmartScreen. |
+| **Mac with Apple Silicon (M1/M2/M3/M4/M5)** | `QuantStats-Lab-vX.Y.Z-macOS-Apple-Silicon.zip` | Unzip, drag `QuantStats Lab.app` into Applications, double-click. |
+| **Mac with Intel processor** | `QuantStats-Lab-vX.Y.Z-macOS-Intel.zip` | Unzip, drag `QuantStats Lab.app` into Applications, double-click. |
+| **Ubuntu/Debian Linux, x64** | `QuantStats-Lab-vX.Y.Z-Linux-x64.deb` | Open the .deb using your software installer, then launch from the app menu. |
+| **Other compatible x64 Linux distributions** | `QuantStats-Lab-vX.Y.Z-Linux-x64.tar.gz` | Extract and launch `QuantStatsLab/QuantStatsLab`. Linux library compatibility varies. |
 
-**Security notice:** CI development artifacts are **not notarised** with an Apple Developer ID. Gatekeeper may block a downloaded build. Verify you trust the repository and its workflow before opening. For a blocked app, use macOS **System Settings → Privacy & Security → Open Anyway**, if available, rather than disabling Gatekeeper globally. Public distribution should use Apple Developer ID signing and notarisation before sharing downloads; see [desktop release documentation](docs/DESKTOP.md).
+`X.Y.Z` is replaced by the actual release version, beginning at **v0.2.0**. Releases remain available at [Releases](https://github.com/yuvsta1/quantstats-lab/releases), and the `/releases/latest` link always points to the newest stable version.
 
-### Run directly from source (developers)
+**Security:** The first development release is unsigned/unnotarised. Windows SmartScreen or Apple Gatekeeper may warn or block the binary; only open it if you trust the repository. Avoid turning off system security globally. Release signing/notarisation is documented in [desktop release guidance](docs/DESKTOP.md).
+
+### Run from Python source (optional)
+
+The source package supports Python **3.11–3.15**, including the current stable **Python 3.15**. Developers may run:
 
 ```bash
-python3.13 -m venv .venv
-source .venv/bin/activate
 python -m pip install -e ".[desktop,dev]"
 python -m quantstats_lab.desktop
 ```
 
-The original optional Streamlit app is retained for research reproducibility and API users.
+The packaged apps bundle Python and their dependencies so **users do not need a Python installation**. The original Streamlit browser interface remains available as a legacy optional extra.
 
 ## Install and launch the legacy browser interface
 
-The library requires Python 3.11+. The tested macOS desktop build targets Python 3.13 and Apple Silicon.
+The source library targets Python 3.11–3.15; standalone release builds use Python 3.15.
 
 ```bash
 # Clone https://github.com/yuvsta1/quantstats-lab and enter its root:

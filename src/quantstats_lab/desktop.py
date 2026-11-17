@@ -13,8 +13,8 @@ import matplotlib
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import (
+    __version__,
     autoregressive_one,
     benjamini_hochberg,
     bootstrap_mean_interval,
@@ -389,11 +390,16 @@ class MainWindow(QMainWindow):
             "simulation, inference and descriptive risk analytics.\n\n"
             "Quantitative outputs are educational and model-based, not trading signals, "
             "investment advice or guaranteed forecasts.\n\n"
-            "MIT License · Version 0.1.0\n\n" + ACKNOWLEDGEMENT
+            f"MIT License · Version {__version__}\n\n" + ACKNOWLEDGEMENT
         )
         info.setWordWrap(True)
         info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(info)
+        update_button = QPushButton("See latest downloadable version on GitHub")
+        update_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://github.com/yuvsta1/quantstats-lab/releases/latest"))
+        )
+        layout.addWidget(update_button)
         layout.addStretch(1)
         self.stack.addWidget(page)
 

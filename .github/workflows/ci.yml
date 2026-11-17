@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        python-version: ['3.11', '3.12', '3.13', '3.14', '3.15']
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -38,15 +38,19 @@ jobs:
           python -m pip install twine
           python -m twine check dist/*
   desktop-smoke:
-    name: Native desktop (Python 3.13)
+    name: Native desktop (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14', '3.15']
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install Linux Qt system libraries
         run: |

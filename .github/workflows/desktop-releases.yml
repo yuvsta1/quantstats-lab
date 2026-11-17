@@ -1,0 +1,113 @@
+name: Desktop Releases
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.label }} / Python 3.15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows-x64
+            runner: windows-2025
+          - label: macOS-Apple-Silicon
+            runner: macos-15
+          - label: macOS-Intel
+            runner: macos-15-intel
+          - label: Linux-x64
+            runner: ubuntu-22.04
+    env:
+      QT_QPA_PLATFORM: offscreen
+      QT_OPENGL: software
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.15'
+          cache: pip
+      - name: Install headless Qt system libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libegl1 libgl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0 libxcb-xinerama0
+      - name: Install desktop dependencies, tests, and packager
+        run: python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.21,<7" "pillow>=11,<14"
+      - name: Run numerical and GUI regression tests
+        run: >
+          python -m pytest
+          tests/test_distributions.py
+          tests/test_inference.py
+          tests/test_integration.py
+          tests/test_processes.py
+          tests/test_risk.py
+          tests/test_simulation.py
+          tests/test_desktop_core.py
+          tests/test_desktop_ui.py
+          -q
+      - name: Build and smoke-test standalone installer
+        run: python scripts/build_desktop_release.py
+      - name: Upload versioned download files
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.label }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish latest GitHub Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.15'
+      - name: Download validated platform installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release-assets
+          merge-multiple: true
+      - name: Verify all release files and calculate checksums
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          test -f "release-assets/QuantStats-Lab-v$VERSION-Windows-x64.exe"
+          test -f "release-assets/QuantStats-Lab-v$VERSION-macOS-Apple-Silicon.zip"
+          test -f "release-assets/QuantStats-Lab-v$VERSION-macOS-Intel.zip"
+          test -f "release-assets/QuantStats-Lab-v$VERSION-Linux-x64.deb"
+          test -f "release-assets/QuantStats-Lab-v$VERSION-Linux-x64.tar.gz"
+          cd release-assets
+          sha256sum QuantStats-Lab-v* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Publish versioned release on GitHub (only once)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists; no duplicate release created."
+          else
+            gh release create "v$VERSION" release-assets/*               --target "$GITHUB_SHA"               --title "QuantStats Lab v$VERSION"               --notes-file docs/RELEASE_NOTES.md               --latest
+          fi
