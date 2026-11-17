@@ -13,11 +13,17 @@ This is a record of *local* evidence, not certification or an assertion of zero 
 - A wheel built successfully with setuptools and was installed into a separate target folder; import and sample calculations succeeded.
 - All Python source compiled successfully.
 
+## GitHub publication
+
+- Public repository: https://github.com/yuvsta1/quantstats-lab
+- Source files, README with the AI disclosure, MIT licence, tests and CI workflow uploaded to the `main` branch and read back using GitHub API.
+- Published commit: `2efcf9b08b33aa8d554ce1b6b674c06d3523d68b`. GitHub Actions push-run outcome has not been confirmed.
+
 ## Not verified in this environment
 
 - Ruff lint output (Ruff could not be installed offline).
 - Streamlit application launch in a real browser or `streamlit.testing` AppTest (Streamlit unavailable offline).
-- GitHub-hosted CI runs, repository creation/publication, branch protection or GitHub releases.
+- GitHub-hosted CI run results, branch protection, or GitHub releases.
 - Third-party dependency vulnerability scan or any production hosting.
 - Independent external user adoption and usage statistics.
 
