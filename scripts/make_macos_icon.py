@@ -7,29 +7,27 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage, QPainter
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtGui import QImage
 
 
 def main() -> None:
     if sys.platform != "darwin":
         raise SystemExit("macOS iconutil is required for generating an .icns file")
     root = Path(__file__).resolve().parents[1]
-    source = root / "assets" / "logo.svg"
+    source = root / "assets" / "logo-original.png"
     iconset = root / "build" / "QuantStatsLab.iconset"
     iconset.mkdir(parents=True, exist_ok=True)
-    renderer = QSvgRenderer(str(source))
-    if not renderer.isValid():
-        raise SystemExit(f"Cannot load SVG icon: {source}")
+    original = QImage(str(source))
+    if original.isNull():
+        raise SystemExit(f"Cannot load original PNG icon: {source}")
 
     for logical in (16, 32, 128, 256, 512):
         for density, suffix in ((1, ""), (2, "@2x")):
             pixel_size = logical * density
-            image = QImage(pixel_size, pixel_size, QImage.Format.Format_ARGB32)
-            image.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(image)
-            renderer.render(painter)
-            painter.end()
+            image = original.scaled(
+                pixel_size, pixel_size, Qt.AspectRatioMode.IgnoreAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
             filename = iconset / f"icon_{logical}x{logical}{suffix}.png"
             if not image.save(str(filename)):
                 raise SystemExit(f"Cannot save icon: {filename}")
