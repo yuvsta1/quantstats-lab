@@ -137,7 +137,7 @@ def stylesheet(dark: bool) -> str:
             color: {c['muted']};
             font-size: 11px;
         }}
-        QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit {{
+        QComboBox, QLineEdit, QPlainTextEdit {{
             background: {c['input']};
             color: {c['text']};
             border: 1px solid {c['border']};
@@ -147,20 +147,14 @@ def stylesheet(dark: bool) -> str:
             selection-color: {c['accent_text']};
             font-size: 12px;
         }}
-        QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover, QPlainTextEdit:hover {{
+        QComboBox:hover, QLineEdit:hover, QPlainTextEdit:hover {{
             border-color: {c['muted']};
         }}
-        QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QPlainTextEdit:focus {{
+        QComboBox:focus, QLineEdit:focus, QPlainTextEdit:focus {{
             border: 1px solid {c['accent']};
         }}
-        QSpinBox, QDoubleSpinBox {{
-            font-family: {mono};
-        }}
-        QSpinBox::up-button, QSpinBox::down-button,
-        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{
-            border: none;
-            width: 0px;
-            height: 0px;
+        QLineEdit {{
+            font-family: 'Menlo', 'Consolas', 'DejaVu Sans Mono', monospace;
         }}
         QComboBox {{
             padding-right: 28px;
