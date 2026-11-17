@@ -113,6 +113,7 @@ def test_active_process_inputs_only(window):
 
 def test_autorender_initial_chart_and_palette_contrast(window):
     from PySide6.QtGui import QPalette
+
     from quantstats_lab.desktop_theme import colours
 
     assert "distributions" in window.exports
