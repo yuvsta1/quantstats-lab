@@ -4,9 +4,9 @@
 
 > **AI development disclosure:** Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
 
-**Status:** `v0.1.0` — initial open-source release candidate. Python 3.11–3.13. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
+**Status:** `v0.1.0` — open-source quantitative workbench. Python 3.11–3.13. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
 
-QuantStats Lab couples a **small, typed Python calculation library** with an optional **interactive Streamlit interface**. It is designed for students, researchers, quantitative developers and traders wanting transparent assumptions, seeded simulations and simple ways to inspect risks or probability models.
+QuantStats Lab couples a **small, typed Python calculation library** with a **native macOS desktop application** and an optional legacy **interactive Streamlit interface**. It is designed for students, researchers, quantitative developers and traders wanting transparent assumptions, seeded simulations and simple ways to inspect risks or probability models.
 
 ## Why use it?
 
@@ -20,7 +20,7 @@ This tool deliberately focuses on **learning and experimentation rather than bac
 
 ## Features
 
-| Module | Public API | Web interface |
+| Module | Public API | Desktop and legacy browser UI |
 | --- | --- | --- |
 | Probability | Normal, Student-t, binomial, Poisson, exponential and lognormal PDF/PMF, CDF, SF, quantiles | Graph distributions and inspect statistics |
 | Monte Carlo | Exact-timestep geometric Brownian motion; independent resampling of supplied return observations | Run and visualise scenario fans, export terminal outcomes |
@@ -28,9 +28,34 @@ This tool deliberately focuses on **learning and experimentation rather than bac
 | Processes | Exact Ornstein–Uhlenbeck transitions and stationary AR(1) simulations | Explore convergence and random paths |
 | Risk analytics | Empirical VaR/expected shortfall, Sharpe ratio, volatility, total/annualised return, maximum drawdown | Import CSV, view metrics/drawdown, export metrics |
 
-## Install and launch
+## Native macOS desktop app (Apple Silicon)
 
-Requires Python 3.11+.
+**This is a separate, real desktop window built with PySide6/Qt, not a browser window or a web server.** It runs all calculations locally and does not require a login. Supports six distribution families, GBM and IID bootstrap simulation, Student-t and IID bootstrap inference, optional Welch and BH tests, exact OU/AR(1) simulation, and descriptive historical risk.
+
+### Download and install the packaged Mac app
+
+1. Open the [macOS Desktop App workflow](https://github.com/yuvsta1/quantstats-lab/actions/workflows/macos-desktop.yml).
+2. Choose a **successful run** on the appropriate branch or tag, and download the **QuantStats-Lab-macOS-Apple-Silicon** artifact ZIP.
+3. Unzip that artifact once to obtain `QuantStats-Lab-macOS-Apple-Silicon.zip`. Unzip that inner ZIP to obtain **QuantStats Lab.app**.
+4. Drag **QuantStats Lab.app** into the Mac's **Applications** folder.
+5. Launch from Applications. No Terminal, Python, Streamlit, network connection or browser is needed for normal use.
+
+**Security notice:** CI development artifacts are **not notarised** with an Apple Developer ID. Gatekeeper may block a downloaded build. Verify you trust the repository and its workflow before opening. For a blocked app, use macOS **System Settings → Privacy & Security → Open Anyway**, if available, rather than disabling Gatekeeper globally. Public distribution should use Apple Developer ID signing and notarisation before sharing downloads; see [desktop release documentation](docs/DESKTOP.md).
+
+### Run directly from source (developers)
+
+```bash
+python3.13 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[desktop,dev]"
+python -m quantstats_lab.desktop
+```
+
+The original optional Streamlit app is retained for research reproducibility and API users.
+
+## Install and launch the legacy browser interface
+
+The library requires Python 3.11+. The tested macOS desktop build targets Python 3.13 and Apple Silicon.
 
 ```bash
 # Clone https://github.com/yuvsta1/quantstats-lab and enter its root:
@@ -117,7 +142,7 @@ Before using quantitative outputs in high-consequence decisions, independently v
 ## Project layout
 
 ```text
-src/quantstats_lab/     Pure-Python-facing numerical library plus optional Streamlit app
+src/quantstats_lab/     Reusable numerical library, native Qt desktop and legacy Streamlit app
 examples/               Runnable Python research workflow and sample CSV
 tests/                  Numerical references, regressions, validation and integration checks
 docs/                   Mathematics, quality assurance and release guidance
