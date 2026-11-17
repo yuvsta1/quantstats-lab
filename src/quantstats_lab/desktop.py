@@ -16,6 +16,7 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
     QApplication,
     QComboBox,
     QDoubleSpinBox,
@@ -31,9 +32,13 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QSplitter,
     QStackedWidget,
+    QStyleFactory,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -56,6 +61,7 @@ from . import (
     welch_ttest,
 )
 from .desktop_core import parse_observations, read_return_columns, write_csv
+from .desktop_theme import apply_palette, colours
 
 matplotlib.use("QtAgg")
 
@@ -82,38 +88,63 @@ def logo_pixmap(size: int) -> QPixmap:
     )
 
 
+class CompactDoubleSpinBox(QDoubleSpinBox):
+    """Show significant decimal digits without five trailing zeros or tiny spin arrows."""
+
+    def textFromValue(self, value: float) -> str:
+        text = f"{value:.5f}".rstrip("0").rstrip(".")
+        return "0" if text in {"", "-0"} else text
+
+
+def add_field(form: QFormLayout, label: str, widget: QWidget) -> None:
+    form.addRow(label, widget)
+    field_label = form.labelForField(widget)
+    if field_label is not None:
+        field_label.setObjectName("fieldLabel")
+
+
 def number(form: QFormLayout, label: str, value: float, minimum: float = -1e9, maximum: float = 1e9) -> QDoubleSpinBox:
-    widget = QDoubleSpinBox()
+    widget = CompactDoubleSpinBox()
     widget.setRange(minimum, maximum)
     widget.setDecimals(5)
     widget.setSingleStep(0.05)
+    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
+    widget.setMinimumHeight(30)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     widget.setValue(value)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
 
 
 def whole(form: QFormLayout, label: str, value: int, minimum: int = 1, maximum: int = 10000) -> QSpinBox:
     widget = QSpinBox()
     widget.setRange(minimum, maximum)
+    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
+    widget.setMinimumHeight(30)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     widget.setValue(value)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
 
 
 def choice(form: QFormLayout, label: str, options: list[str]) -> QComboBox:
     widget = QComboBox()
     widget.addItems(options)
-    form.addRow(label, widget)
+    widget.setMinimumHeight(30)
+    widget.setMaxVisibleItems(8)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    add_field(form, label, widget)
     return widget
 
 
-def lines(form: QFormLayout, label: str, value: str, height: int = 78) -> QPlainTextEdit:
+def lines(form: QFormLayout, label: str, value: str, height: int = 62) -> QPlainTextEdit:
     widget = QPlainTextEdit()
     widget.setPlainText(value)
     widget.setFixedHeight(height)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
-
 
 class Chart(QWidget):
     """Embedded Matplotlib canvas with built-in pan/zoom/save tools."""
