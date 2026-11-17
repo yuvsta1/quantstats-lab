@@ -1,22 +1,19 @@
-# QuantStats Lab v0.2.1 — Compact workstation interface
+# QuantStats Lab v0.2.2 — Keyboard input repair
 
-This update improves usability on Windows, macOS and Linux using the user's screen recording as a real-world design reference.
+Fixes a critical usability issue reported on the Mac application: numeric parameter boxes could appear uneditable and refused typed digits.
 
-- Cleaner, narrower left navigation and less wasted space throughout the research workstation
-- Numeric inputs show meaningful digits instead of trailing zeroes; tiny spinner arrows/dots are hidden
-- Reworked dropdowns with readable native popup palettes in both light and dark modes
-- Simplified charts: compact text controls for Reset, Pan, Zoom and Save PNG replace oversized toolbar icons
-- Consistent muted labels, borders and accessible contrast across the UI and plots
-- Context-sensitive Monte Carlo and stochastic-process inputs; irrelevant parameters no longer clutter the panel
-- Initial research chart renders when navigating to a tool
-- Scrollable parameter sections for smaller screens while exports and result summaries remain visible
-- New headless Qt tests for input formatting, theme contrast, toolbar behaviour and conditional inputs
-- All quantitative calculation APIs and reproducibility logic preserved
+- Replace problematic custom Qt spin boxes with normal, keyboard-friendly numeric text editors.
+- Enter decimals, negative numbers and whole-number parameters directly, by clicking and typing.
+- Allow incomplete values while typing; when running an analysis, validate finite numbers and explain missing, nonnumeric or out-of-range values.
+- Keep the uncluttered v0.2.1 appearance and light/dark theme, with explicit text-field contrast and focus styling.
+- Add automated tests that **simulate actual keyboard typing** into displayed parameter fields in dark and light mode; include macOS, Windows and Linux build/startup tests.
+- Preserve the existing scientific calculations, plotting, CSV import/export and model choices.
 
-Cross-platform standalone application downloads contain their own Python runtime. No manual Python installation is necessary.
+**Important:** Analysis outputs and summaries are deliberately read-only. Dropdowns select models; numeric parameter fields and data-entry fields are editable.
 
-**Distribution limitations:** macOS builds are not Apple-notarised; Windows builds are unsigned. Your operating system might prompt you to confirm the publisher. Review the project source and checksums. Automated smoke tests do not replace manual testing on real hardware.
+### Update
+Download your operating system's v0.2.2 package from the GitHub Releases page and replace your existing app. Desktop distributions bundle Python, so no separate Python installation is needed.
 
-**Quantitative limitation:** the tools are educational/research calculations, not investment advice or market forecasts.
+**Security:** Windows builds are currently unsigned and macOS builds are unnotarised. Gatekeeper/SmartScreen may warn. Check source and checksums; avoid disabling system-wide security controls.
 
 Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
