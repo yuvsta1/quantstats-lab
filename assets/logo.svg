@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-label="QuantStats Lab logo">
+  <title>QuantStats Lab</title>
+  <!-- Vector recreation faithfully referenced to the supplied navy, turquoise and white artwork. -->
+  <rect x="58" y="65" width="1132" height="1126" rx="264" fill="#06172D"/>
+  <path d="M304 750 C422 811 480 422 614 425 C744 423 814 805 926 750" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/>
+  <path d="M381 784 H853" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"/>
+  <rect x="470" y="666" width="84" height="102" rx="2" fill="#46C8C2"/>
+  <rect x="577" y="570" width="83" height="198" rx="2" fill="#46C8C2"/>
+  <rect x="684" y="656" width="83" height="112" rx="2" fill="#46C8C2"/>
+  <circle cx="615" cy="611" r="363" fill="none" stroke="#45C7C1" stroke-width="75"/>
+  <path d="M844 894 L987 1034 L879 1034 L808 964" fill="#45C7C1" stroke="#45C7C1" stroke-linecap="round" stroke-linejoin="round" stroke-width="14"/>
+</svg>
