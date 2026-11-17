@@ -1,3 +1,13 @@
+## [0.2.1] - 2026-11-17
+
+### Changed
+- Refined the desktop UI to a compact, minimalist quantitative workstation based on user screen-recording feedback.
+- Removed spinner dots and excess decimal zeros; improved dropdown menus, plotting controls, readable dark/light themes, and form layout.
+- Automatically display a chart on first entry and hide parameters unused by the selected statistical model.
+
+### Tests
+- Added GUI regression tests for theme contrast, numerical formatting, navigation, and conditional inputs.
+
 # Changelog
 
 ## [0.1.0] - 2026-11-17
