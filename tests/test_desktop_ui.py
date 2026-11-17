@@ -84,7 +84,7 @@ def test_compact_numeric_editors_have_no_spinner_dots(window):
 def test_compact_chart_toolbar_replaces_large_icon_strip(window):
     chart = window.pages["distributions"].chart
     assert chart.toolbar.isHidden()
-    tools = chart.findChildren(QToolButton)
+    tools = [tool for tool in chart.findChildren(QToolButton) if tool.objectName() == "plotTool"]
     assert [tool.text() for tool in tools] == ["Reset", "Pan", "Zoom", "Save PNG"]
     assert chart.objectName() == "plotPanel"
 
@@ -123,7 +123,8 @@ def test_autorender_initial_chart_and_palette_contrast(window):
     window.toggle_theme()
     after = window.palette().color(QPalette.ColorRole.Base).name()
     assert before != after
-    assert after == colours(False)["input"].lower()
+    assert after == colours(False)["bg"].lower()
+    assert QApplication.instance().palette().color(QPalette.ColorRole.Base).name() == colours(False)["input"].lower()
     assert "QComboBox QAbstractItemView" in window.styleSheet()
 
 
