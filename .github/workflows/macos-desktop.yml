@@ -40,7 +40,7 @@ jobs:
             --clean --noconfirm --onedir --windowed \
             --name "QuantStats Lab" \
             --icon "assets/logo.icns" \
-            --add-data "assets/logo.svg:assets" \
+            --add-data "assets/logo-original.png:assets" \
             --osx-bundle-identifier "io.github.yuvsta1.quantstatslab" \
             "scripts/desktop_entry.py"
       - name: Verify app structure
