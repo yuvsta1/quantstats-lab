@@ -305,24 +305,29 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("QuantStats Lab")
         self.setWindowIcon(QIcon(logo_pixmap(256)))
-        self.resize(1340, 830)
-        self.setMinimumSize(920, 650)
+        self.resize(1190, 735)
+        self.setMinimumSize(930, 610)
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyle(QStyleFactory.create("Fusion"))
         self.dark = True
         self.exports: dict[str, tuple[list[str], list[list[object]]]] = {}
         self.returns = np.random.default_rng(42).normal(0.0003, 0.012, size=504)
         self.returns_label = "Synthetic demonstration returns (not market data)"
         root = QWidget()
+        root.setObjectName("centralRoot")
         self.setCentralWidget(root)
         layout = QHBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(225)
+        sidebar.setFixedWidth(184)
         side_layout = QVBoxLayout(sidebar)
-        side_layout.setContentsMargins(16, 24, 16, 20)
+        side_layout.setContentsMargins(11, 14, 11, 12)
+        side_layout.setSpacing(5)
         brand = QLabel()
-        brand.setPixmap(logo_pixmap(82))
+        brand.setPixmap(logo_pixmap(56))
         brand.setAlignment(Qt.AlignmentFlag.AlignCenter)
         side_layout.addWidget(brand)
         name = QLabel("QUANTSTATS LAB")
@@ -333,23 +338,32 @@ class MainWindow(QMainWindow):
         tagline.setObjectName("brandTagline")
         tagline.setAlignment(Qt.AlignmentFlag.AlignCenter)
         side_layout.addWidget(tagline)
-        side_layout.addSpacing(24)
+        side_layout.addSpacing(18)
         self.navigation = QListWidget()
         self.navigation.addItems(self.LABELS)
         self.navigation.setObjectName("navigation")
+        self.navigation.setSpacing(1)
         side_layout.addWidget(self.navigation, 1)
-        side_layout.addWidget(QLabel("REPRODUCIBLE SEED"))
+        seed_label = QLabel("REPRODUCIBLE SEED")
+        seed_label.setObjectName("sidebarCaption")
+        side_layout.addWidget(seed_label)
         self.seed = QSpinBox()
         self.seed.setRange(0, 2_147_483_647)
         self.seed.setValue(42)
+        self.seed.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.seed.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.seed.setMinimumHeight(30)
         side_layout.addWidget(self.seed)
-        side_layout.addSpacing(14)
+        side_layout.addSpacing(9)
         self.theme_switch = QPushButton("Switch to light mode")
         self.theme_switch.clicked.connect(self.toggle_theme)
         side_layout.addWidget(self.theme_switch)
-        side_layout.addWidget(QLabel("Local processing  •  No account needed"))
+        status = QLabel("OFFLINE-READY  ·  NO ACCOUNT")
+        status.setObjectName("sidebarCaption")
+        side_layout.addWidget(status)
         layout.addWidget(sidebar)
         self.stack = QStackedWidget()
+        self.stack.setObjectName("workPages")
         layout.addWidget(self.stack, 1)
         self.pages: dict[str, ResearchPage] = {}
         self._distributions()
@@ -358,9 +372,16 @@ class MainWindow(QMainWindow):
         self._processes()
         self._risk()
         self._about()
-        self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)
-        self.navigation.setCurrentRow(0)
+        self.navigation.currentRowChanged.connect(self.show_page)
         self.apply_theme()
+        self.navigation.setCurrentRow(0)
+
+    def show_page(self, index: int) -> None:
+        """Render a useful default chart when a research page first opens."""
+        self.stack.setCurrentIndex(index)
+        keys = ("distributions", "simulation", "inference", "processes", "risk")
+        if 0 <= index < len(keys) and keys[index] not in self.exports:
+            self.calculate(keys[index])
 
     def add_page(self, key: str, title: str, subtitle: str) -> ResearchPage:
         page = ResearchPage(title, subtitle)
@@ -380,6 +401,7 @@ class MainWindow(QMainWindow):
             "normal", "student_t", "binomial", "poisson", "exponential", "lognormal",
         ])
         self.dist_parameters = QStackedWidget()
+        self.dist_parameters.setObjectName("parameterStack")
         specs = [
             [("mean", 0.0, -1e6, 1e6), ("std", 1.0, 0.0001, 1e6)],
             [("df", 5.0, 0.0001, 1e6), ("loc", 0.0, -1e6, 1e6), ("scale", 1.0, 0.0001, 1e6)],
@@ -391,7 +413,12 @@ class MainWindow(QMainWindow):
         self.dist_inputs: list[dict[str, QDoubleSpinBox | QSpinBox]] = []
         for i, fields in enumerate(specs):
             panel = QWidget()
+            panel.setObjectName("parameterPanel")
             form = QFormLayout(panel)
+            form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+            form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            form.setHorizontalSpacing(10)
+            form.setVerticalSpacing(7)
             mapping = {}
             for field, default, minimum, maximum in fields:
                 if i == 2 and field == "n":
@@ -417,6 +444,16 @@ class MainWindow(QMainWindow):
         self.sim_steps = whole(page.form, "Steps", 252, 1, 2520)
         self.sim_paths = whole(page.form, "Paths", 500, 1, 20000)
         self.sim_observations = lines(page.form, "Bootstrap returns (decimals)", "0.012, -0.009, 0.003, 0.004")
+        self.sim_type.currentIndexChanged.connect(lambda _index: self.update_simulation_fields())
+        self.update_simulation_fields()
+
+    def update_simulation_fields(self) -> None:
+        """Display only the parameters used by the currently selected model."""
+        form = self.pages["simulation"].form
+        bootstrap = self.sim_type.currentIndex() == 1
+        form.setRowVisible(self.sim_drift, not bootstrap)
+        form.setRowVisible(self.sim_volatility, not bootstrap)
+        form.setRowVisible(self.sim_observations, bootstrap)
 
     def _inference(self) -> None:
         page = self.add_page(
@@ -445,6 +482,14 @@ class MainWindow(QMainWindow):
         self.proc_vol = number(page.form, "Volatility / innovation std", 0.6, 0)
         self.proc_steps = whole(page.form, "Steps", 252, 1, 2520)
         self.proc_paths = whole(page.form, "Paths", 100, 1, 20000)
+        self.proc_type.currentIndexChanged.connect(lambda _index: self.update_process_fields())
+        self.update_process_fields()
+
+    def update_process_fields(self) -> None:
+        form = self.pages["processes"].form
+        is_ou = self.proc_type.currentIndex() == 0
+        form.setRowVisible(self.proc_theta, is_ou)
+        form.setRowVisible(self.proc_phi, not is_ou)
 
     def _risk(self) -> None:
         page = self.add_page(
@@ -692,33 +737,8 @@ class MainWindow(QMainWindow):
         self.apply_theme()
 
     def apply_theme(self) -> None:
-        fg = "#E9F5F9" if self.dark else "#172338"
-        bg = "#071A32" if self.dark else "#F2F6F8"
-        control = "#102B46" if self.dark else "#FFFFFF"
-        stroke = "#31536B" if self.dark else "#CCD8E0"
-        self.setStyleSheet(f"""
-            QMainWindow, QWidget {{ background: {bg}; color: {fg}; font-size: 13px; }}
-            QFrame#sidebar {{ background: {NAVY}; color: #ECF7FA; }}
-            QFrame#sidebar QLabel {{ background: transparent; color: #C5E3E6; }}
-            QLabel#brandName {{ font-size: 16px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px; }}
-            QLabel#brandTagline {{ font-size: 9px; color: {TEAL}; }}
-            QLabel#pageTitle {{ font-size: 28px; font-weight: bold; }}
-            QLabel#subtitle {{ color: {"#A9C2CF" if self.dark else "#566678"}; margin-bottom: 8px; }}
-            QListWidget#navigation {{ background: transparent; border: none; color: #C8E2EA; font-size: 13px; }}
-            QListWidget#navigation::item {{ padding: 13px; border-radius: 8px; }}
-            QListWidget#navigation::item:selected {{ background: #145463; color: #FFFFFF; }}
-            QFrame#controlPanel {{ border: 1px solid {stroke}; border-radius: 12px; }}
-            QGroupBox {{ font-weight: 600; border: 0; margin-top: 13px; padding-top: 8px; }}
-            QGroupBox::title {{ subcontrol-origin: margin; left: 0px; }}
-            QDoubleSpinBox, QSpinBox, QComboBox, QPlainTextEdit {{
-                background: {control}; color: {fg}; border: 1px solid {stroke};
-                border-radius: 6px; padding: 7px; selection-background-color: {TEAL};
-            }}
-            QPushButton {{ background: {control}; border: 1px solid {stroke}; padding: 10px; border-radius: 7px; }}
-            QPushButton:hover {{ border: 1px solid {TEAL}; }}
-            QPushButton#primaryButton {{ background: #199D98; color: #FFFFFF; font-weight: bold; border: none; }}
-            QPushButton:disabled {{ color: #849BAA; }}
-        """)
+        """Apply a whole-window palette, including popups and embedded plots."""
+        apply_palette(self, self.dark)
         for page in self.pages.values():
             page.chart.dark = self.dark
             page.chart.restyle()
