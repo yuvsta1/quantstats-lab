@@ -147,39 +147,71 @@ def lines(form: QFormLayout, label: str, value: str, height: int = 62) -> QPlain
     return widget
 
 class Chart(QWidget):
-    """Embedded Matplotlib canvas with built-in pan/zoom/save tools."""
+    """Integrated chart surface with quiet text actions instead of an oversized icon strip."""
 
     def __init__(self) -> None:
         super().__init__()
+        self.setObjectName("plotPanel")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(12, 10, 12, 12)
+        layout.setSpacing(4)
+
         self.figure = Figure(figsize=(8, 5), dpi=100, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.toolbar = NavigationToolbar2QT(self.canvas, self)
-        layout.addWidget(self.toolbar)
+        self.toolbar.hide()
+
+        tools = QHBoxLayout()
+        tools.setContentsMargins(2, 0, 2, 2)
+        tools.setSpacing(2)
+        caption = QLabel("VISUALISATION")
+        caption.setObjectName("eyebrow")
+        tools.addWidget(caption)
+        tools.addStretch(1)
+        for title, tooltip, callback in (
+            ("Reset", "Reset chart axes", self.toolbar.home),
+            ("Pan", "Drag the plot to pan", self.toolbar.pan),
+            ("Zoom", "Drag over a region to zoom", self.toolbar.zoom),
+            ("Save PNG", "Save the chart as an image", self.toolbar.save_figure),
+        ):
+            action = QToolButton()
+            action.setObjectName("plotTool")
+            action.setText(title)
+            action.setToolTip(tooltip)
+            action.clicked.connect(callback)
+            tools.addWidget(action)
+        layout.addLayout(tools)
         layout.addWidget(self.canvas, 1)
         self.ax = self.figure.add_subplot(111)
         self.dark = True
         self.restyle()
 
     def restyle(self) -> None:
-        fg, bg = ("#DCE8F0", NAVY) if self.dark else ("#23314A", "#FFFFFF")
+        c = colours(self.dark)
+        fg, bg = c["text"], c["chart"]
         self.figure.patch.set_facecolor(bg)
         self.ax.set_facecolor(bg)
-        self.ax.tick_params(colors=fg, labelsize=9)
-        self.ax.xaxis.label.set_color(fg)
-        self.ax.yaxis.label.set_color(fg)
+        self.ax.tick_params(colors=c["muted"], labelsize=9, width=0.7)
+        self.ax.xaxis.label.set_color(c["muted"])
+        self.ax.yaxis.label.set_color(c["muted"])
         self.ax.title.set_color(fg)
         for spine in self.ax.spines.values():
-            spine.set_color("#6C8596" if self.dark else "#C2CED6")
-        self.ax.grid(alpha=0.15, color=fg)
+            spine.set_color(c["border"])
+        self.ax.grid(visible=False, axis="x")
+        self.ax.grid(visible=True, axis="y", alpha=0.38, color=c["grid"], linewidth=0.7)
+        legend = self.ax.get_legend()
+        if legend is not None:
+            legend.get_frame().set_facecolor(bg)
+            legend.get_frame().set_edgecolor(c["border"])
+            for text in legend.get_texts():
+                text.set_color(fg)
         self.canvas.draw_idle()
 
     def clear(self, title: str, xlabel: str, ylabel: str) -> None:
         self.ax.clear()
-        self.ax.set_title(title, loc="left", fontsize=13, pad=18, fontweight="semibold")
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
+        self.ax.set_title(title, loc="left", fontsize=11, pad=10, fontweight="semibold")
+        self.ax.set_xlabel(xlabel, fontsize=9)
+        self.ax.set_ylabel(ylabel, fontsize=9)
 
     def finish(self) -> None:
         self.restyle()
@@ -188,21 +220,23 @@ class Chart(QWidget):
         self.clear(title, "Step", "Simulated value")
         axis = np.arange(paths.shape[1])
         low, med, high = np.quantile(paths, [0.05, 0.50, 0.95], axis=0)
-        self.ax.fill_between(axis, low, high, color=TEAL, alpha=0.20, label="5–95% band")
+        self.ax.fill_between(axis, low, high, color=TEAL, alpha=0.18, label="5–95% band")
         for path in paths[: min(12, len(paths))]:
             self.ax.plot(axis, path, color="#829FB0", alpha=0.17, linewidth=0.8)
-        self.ax.plot(axis, med, color=TEAL, linewidth=2.6, label="Median")
+        self.ax.plot(axis, med, color=TEAL, linewidth=2.3, label="Median")
         self.ax.legend(loc="best", frameon=False, fontsize=9)
         self.finish()
 
 
 class ResearchPage(QWidget):
-    """Reusable split-pane: validated input controls beside an interactive chart."""
+    """Compact research controls with a scrolling parameter area beside the output."""
 
     def __init__(self, title: str, subtitle: str) -> None:
         super().__init__()
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(24, 20, 24, 20)
+        outer.setContentsMargins(18, 15, 18, 18)
+        outer.setSpacing(5)
+
         heading = QLabel(title)
         heading.setObjectName("pageTitle")
         outer.addWidget(heading)
@@ -210,35 +244,59 @@ class ResearchPage(QWidget):
         desc.setWordWrap(True)
         desc.setObjectName("subtitle")
         outer.addWidget(desc)
+
         split = QSplitter(Qt.Orientation.Horizontal)
+        split.setHandleWidth(8)
         controls = QFrame()
         controls.setObjectName("controlPanel")
+        controls.setMinimumWidth(294)
+        controls.setMaximumWidth(384)
         control_layout = QVBoxLayout(controls)
-        control_layout.setContentsMargins(18, 20, 18, 18)
-        group = QGroupBox("Research parameters")
+        control_layout.setContentsMargins(14, 12, 14, 12)
+        control_layout.setSpacing(8)
+
+        group = QGroupBox("RESEARCH PARAMETERS")
         self.form = QFormLayout(group)
-        self.form.setSpacing(12)
-        control_layout.addWidget(group)
+        self.form.setHorizontalSpacing(10)
+        self.form.setVerticalSpacing(8)
+        self.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        self.form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.form.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+
+        scroller = QScrollArea()
+        scroller.setFrameShape(QFrame.Shape.NoFrame)
+        scroller.setWidgetResizable(True)
+        scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroller.setWidget(group)
+        control_layout.addWidget(scroller, 1)
+
         self.run = QPushButton("Run analysis")
         self.run.setObjectName("primaryButton")
+        self.run.setToolTip("Calculate the model with the current parameters")
         control_layout.addWidget(self.run)
+
+        summary_label = QLabel("RESEARCH OUTPUT")
+        summary_label.setObjectName("eyebrow")
+        control_layout.addWidget(summary_label)
         self.summary = QPlainTextEdit()
         self.summary.setObjectName("summary")
         self.summary.setReadOnly(True)
-        self.summary.setMinimumHeight(110)
-        self.summary.setPlainText("Set parameters, then run an analysis.")
+        self.summary.setFixedHeight(115)
+        self.summary.setPlainText("Use Run analysis to refresh this model.")
         control_layout.addWidget(self.summary)
-        self.export = QPushButton("Export results as CSV…")
+
+        self.export = QPushButton("Export CSV…")
+        self.export.setToolTip("Save results to a CSV file")
         self.export.setEnabled(False)
         control_layout.addWidget(self.export)
-        control_layout.addStretch(1)
+
         self.chart = Chart()
+        self.chart.setMinimumWidth(370)
         split.addWidget(controls)
         split.addWidget(self.chart)
-        split.setSizes([375, 780])
+        split.setSizes([330, 820])
         split.setStretchFactor(1, 2)
         outer.addWidget(split, 1)
-
 
 class MainWindow(QMainWindow):
     LABELS = ["Distributions", "Monte Carlo", "Statistical inference", "Stochastic processes", "Risk analytics", "About"]
