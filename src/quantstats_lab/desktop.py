@@ -14,8 +14,7 @@ import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPainter, QPixmap
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -70,20 +69,16 @@ NAVY = "#06172D"
 def logo_path() -> Path:
     """Find the branded SVG in source checkout or PyInstaller's frozen data directory."""
     if getattr(sys, "frozen", False):
-        return Path(sys._MEIPASS) / "assets" / "logo.svg"  # type: ignore[attr-defined]
-    return Path(__file__).resolve().parents[2] / "assets" / "logo.svg"
+        return Path(sys._MEIPASS) / "assets" / "logo-original.png"  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parents[2] / "assets" / "logo-original.png"
 
 
 def logo_pixmap(size: int) -> QPixmap:
-    """Render the provided logo's vector treatment at sharp display resolutions."""
-    pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    renderer = QSvgRenderer(str(logo_path()))
-    if renderer.isValid():
-        painter = QPainter(pixmap)
-        renderer.render(painter)
-        painter.end()
-    return pixmap
+    """Load the user's actual supplied brand artwork, preserving its proportions."""
+    pixmap = QPixmap(str(logo_path()))
+    return pixmap.scaled(
+        size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation,
+    )
 
 
 def number(form: QFormLayout, label: str, value: float, minimum: float = -1e9, maximum: float = 1e9) -> QDoubleSpinBox:
