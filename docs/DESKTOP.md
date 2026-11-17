@@ -1,77 +1,65 @@
-# macOS desktop release and verification
+# Desktop Releases — Windows, macOS and Linux
 
-## Architecture
+## Official downloads
 
-- `quantstats_lab.desktop`: a **native PySide6/Qt** application (no browser engine, Streamlit server, local port, or remote connection).
-- `quantstats_lab.desktop_core`: independent strict text / CSV input and CSV export helpers.
-- Existing distribution, inference, process, simulation and risk Python APIs remain the single source of numerical calculations.
-- Embedded Matplotlib Qt canvas provides pan/zoom/save, line/bar/fan/drawdown charts.
-- `assets/logo-original.png` preserves a cropped, resized and optimised raster derivative of the user-supplied navy/turquoise/white logo, including its transparent rounded background. `scripts/make_macos_icon.py` produces the retina icon sizes and macOS `.icns` for Dock and Finder. A design-reference vector is also available in `assets/logo.svg`.
-- `src/quantstats_lab/app.py` (Streamlit) is retained as a separately installable legacy interface.
+**Latest stable release:** https://github.com/yuvsta1/quantstats-lab/releases/latest
 
-## Build a standalone macOS .app
+**All versions:** https://github.com/yuvsta1/quantstats-lab/releases
 
-Requires an **Apple Silicon Mac**, Python 3.13, and macOS `iconutil` (preinstalled with macOS).
-Run from repository root:
+Versioned assets are attached directly to GitHub Releases and remain available independently of short-lived CI artifacts.
+
+| Platform | Supported target | File | Install |
+| --- | --- | --- | --- |
+| Windows | Windows 10/11 x64 | `QuantStats-Lab-vX.Y.Z-Windows-x64.exe` | Download and double-click |
+| Mac | macOS 15+ Apple Silicon | `QuantStats-Lab-vX.Y.Z-macOS-Apple-Silicon.zip` | Unzip, drag `QuantStats Lab.app` to Applications |
+| Mac | macOS 15+ Intel | `QuantStats-Lab-vX.Y.Z-macOS-Intel.zip` | Unzip, drag `QuantStats Lab.app` to Applications |
+| Linux | Ubuntu 22.04+/Debian-compatible x64 | `QuantStats-Lab-vX.Y.Z-Linux-x64.deb` | Open with Debian software installer |
+| Linux | Linux x64 with compatible shared libraries | `QuantStats-Lab-vX.Y.Z-Linux-x64.tar.gz` | Extract, launch `QuantStatsLab/QuantStatsLab` |
+
+Linux portable bundles are not guaranteed to run on every distribution; Debian/Ubuntu .deb is the preferred path where supported. This release does not build ARM64 Windows/Linux packages. Mac ARM64 and Intel packages are separate native builds.
+
+**Standalone:** these apps bundle their own Python interpreter and native Qt libraries. Users do not have to install Python or open Terminal. The GUI does not use a web server or require network access for ordinary calculations. Clicking the optional "latest version" button explicitly opens GitHub in a browser.
+
+## Automatic versioned GitHub Releases
+
+The workflow `.github/workflows/desktop-releases.yml`:
+
+1. Runs on pull requests and on `main` pushes.
+2. Installs Python **3.15** and desktop build dependencies on all four GitHub-hosted runner targets (macOS arm64, macOS Intel, Windows x64 and Ubuntu Linux x64).
+3. Executes numerical and native offscreen UI regression tests on each OS.
+4. Builds the real app using PyInstaller and **runs the frozen executable with `--smoke-test`** on each OS.
+5. Produces a signed? **No — unsigned** file set: Windows one-file EXE, two zipped Mac app bundles, Linux .deb and portable tarball.
+6. On `main` only, **after all four builds pass**, gathers all five files, generates `SHA256SUMS.txt`, and publishes a GitHub Release at tag `vX.Y.Z` matching `pyproject.toml`.
+7. If a matching release already exists, does not overwrite it. To publish the next version, increment `pyproject.toml`, `src/quantstats_lab/__init__.py`, and the release notes; merge the changes into `main` only after passing CI.
+
+A source-code push to `main` does not generate a duplicate release when the version remains unchanged. The standard `CI` workflow additionally tests the Python 3.11–3.15 numerical library and 3.13–3.15 native Qt interface.
+
+## Developer build
+
+From the repository root, with Python 3.15 for your own platform:
 
 ```bash
-python3.13 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.13,<7"
-QT_QPA_PLATFORM=offscreen python -m pytest tests/test_desktop_core.py tests/test_desktop_ui.py
-python scripts/make_macos_icon.py
-python -m PyInstaller --clean --noconfirm --onedir --windowed \
-  --name "QuantStats Lab" \
-  --icon "assets/logo.icns" \
-  --add-data "assets/logo-original.png:assets" \
-  --osx-bundle-identifier "io.github.yuvsta1.quantstatslab" \
-  scripts/desktop_entry.py
+python -m pip install -e ".[desktop,dev]" "pyinstaller>=6.21,<7" "pillow>=11,<14"
+python -m pytest tests/test_desktop_core.py tests/test_desktop_ui.py -q
+python scripts/build_desktop_release.py
 ```
 
-The resulting file is `dist/QuantStats Lab.app`. Drag it to `/Applications`, then double-click it.
-The app bundles the Python runtime, Qt, NumPy/SciPy and Matplotlib. Users do not need a separate Python installation.
+The script produces the platform's versioned files inside `release-assets/`. On Linux, `dpkg-deb` is required for .deb creation; on macOS, Apple's built-in `iconutil`, `plutil` and `ditto` are used. The Windows icon comes from your navy/turquoise logo; both Mac bundles use the same supplied logo.
 
-## Download GitHub Actions builds
+## Security and distribution
 
-The `macOS Desktop App` workflow runs on an **Apple Silicon macOS 15** runner, tests desktop UI offscreen,
-renders a retina iconset, generates a `.app` with PyInstaller, checks the bundle layout, starts and stops the packaged application in headless smoke-test mode, and uploads a ZIP artifact.
+**These builds are currently unsigned and Apple-unnotarised.** On macOS, Gatekeeper may block a downloaded app. On Windows, SmartScreen can warn about an unsigned executable. Do not disable security protections globally; verify the GitHub source, version and SHA256 checksum before considering a security exception.
 
-Artifacts are CI development builds, **not** officially released or notarised distributions. Downloading from an
-untrusted branch or pull request may be unsafe. The artifact expires according to GitHub retention settings.
+For broad public distribution, configure Apple Developer ID signing and notarisation, and Windows code signing. Publishing binaries as GitHub Release assets does **not** mean Apple or Microsoft has verified them.
 
-## Apple distribution and Gatekeeper
+PySide6 Qt libraries have their own licensing and notices; check LGPL obligations before commercial redistribution.
 
-- For sharing beyond local testing, obtain an **Apple Developer Program** membership and **Developer ID Application** certificate.
-- Sign **all nested binaries and frameworks**, enable hardened runtime where necessary, then sign the final app bundle.
-- Notarise the ZIP/DMG with Apple's `notarytool`; staple the ticket to the app or disk image and verify with `spctl`.
-- Use a build with a trusted certificate and reproducible source review. GitHub CI currently does **not** sign or notarise.
-- For your own Mac, a blocked, unnotarised app can generally be opened through Finder's Open action or
-  System Settings → Privacy & Security → Open Anyway after confirming you trust the source. Do not turn off Gatekeeper globally.
+## Manual smoke tests (real hardware)
 
-## Manual smoke test (required before calling a release complete)
+Automated CI cannot replace manual testing on actual hardware. Before treating any release as fully proven, test download, extraction, startup, icons and interaction on Windows x64, both Mac architectures and a supported Linux GUI.
 
-1. Double-click the packaged app from `/Applications` **with Terminal closed**. Confirm there is no browser page.
-2. Confirm the navy/turquoise application icon appears in Finder, Dock, and window title.
-3. Toggle light/dark mode and resize the desktop window; the chart should remain visible.
-4. On Distributions, calculate **each of the six families** and use chart toolbar pan/zoom/save.
-5. On Monte Carlo, run GBM and bootstrap, verify same seed yields same outcomes, export CSV.
-6. On Inference, check Student-t, IID bootstrap, one-sample test, optional Welch, optional BH.
-7. On Processes, run OU and AR(1), check exported terminal states.
-8. On Risk, explicitly note synthetic sample mode; import a CSV with decimal simple returns,
-   choose a numeric column, inspect VaR/ES/drawdown, export results.
-9. Try invalid numeric input, malformed/missing CSV, negative returns less than -100%, and huge files.
-   The app must show a recoverable validation error rather than crash.
-10. Disconnect internet and re-run ordinary calculations. No online services should be required.
-11. Check macOS Activity Monitor for the native Qt process and quit/relaunch from Applications.
+Check the five research modules, reproducibility with a seed, local CSV validation, exports, chart pan/zoom/save, dark/light mode and app exit/relaunch. Verify that internet disconnection does not stop normal calculations.
 
-## Notes and limitations
+**Known limits:** Large simulations can block the GUI event loop temporarily. GBM and IID-bootstrap assumptions remain model-based; risk metrics are descriptive, not market forecasts. See `docs/MATH.md`.
 
-- CI tests do not replace the above on-device macOS verification. macOS Gatekeeper behaviour and rendering vary.
-- Computational work currently runs on the GUI event loop; very large simulations can temporarily freeze the interface.
-- IID bootstrap ignores serial dependence. GBM is model-based and not a price forecast. Historical VaR/ES does not
-  guarantee forward tail coverage. Consult `docs/MATH.md` for assumptions.
-- Security/privacy: no telemetry or network calls are made by the desktop app. Imported CSV data stay in memory
-  until closing the app; exporting is an explicit user action.
-- All 99 original tests remain part of the regular CI suite; the desktop adds separate GUI and import tests.
-
-**Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.**
+Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
