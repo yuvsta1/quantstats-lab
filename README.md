@@ -33,7 +33,7 @@ This tool deliberately focuses on **learning and experimentation rather than bac
 Requires Python 3.11+.
 
 ```bash
-# Clone the project when the GitHub repository is published, then from its root:
+# Clone https://github.com/yuvsta1/quantstats-lab and enter its root:
 python -m venv .venv
 source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
 python -m pip install -e ".[app]"
