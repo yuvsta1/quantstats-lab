@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and tools
+        run: python -m pip install -e ".[app,dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Tests and coverage
+        run: python -m pytest --cov=quantstats_lab --cov-report=term-missing
+      - name: Example smoke test
+        run: python examples/research_walkthrough.py
+      - name: Build distributions
+        run: python -m build
+      - name: Check distribution metadata
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*

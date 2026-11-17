@@ -1,0 +1,16 @@
+name: Feature request
+description: Describe a real user problem and proposed capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Who needs this, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution and modelling assumptions
+    validations:
+      required: true

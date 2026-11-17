@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible correctness or usability problem
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Describe the error and expected outcome; remove any confidential information.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest code/data inputs that demonstrate the issue.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Python, package and OS versions
+    validations:
+      required: true
+  - type: textarea
+    id: math
+    attributes:
+      label: Independent mathematical reference (if applicable)
