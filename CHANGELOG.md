@@ -1,3 +1,10 @@
+## [0.2.2] - 2026-11-18
+
+### Fixed
+- Restored reliable keyboard entry for all numeric input fields using native text editors instead of restricted spin controls.
+- Validate numerical values on calculation with clear error messages, supporting intermediate edits.
+- Added GUI tests that send real keyboard events to displayed numeric fields in both themes and validate inputs.
+
 ## [0.2.1] - 2026-11-17
 
 ### Changed
