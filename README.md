@@ -4,7 +4,7 @@
 
 > **AI development disclosure:** Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
 
-**Status:** `v0.2.0` — native multi-platform quantitative workbench. Python 3.11–3.15. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
+**Status:** `v0.2.1` — native multi-platform quantitative workbench. Python 3.11–3.15. MIT licence. No trading signals, broker connections, market-data subscriptions or paid accounts.
 
 QuantStats Lab couples a **small, typed Python calculation library** with **native Windows, macOS and Linux desktop applications** and an optional legacy **interactive Streamlit interface**. It is designed for students, researchers, quantitative developers and traders wanting transparent assumptions, seeded simulations and simple ways to inspect risks or probability models.
 
@@ -29,6 +29,8 @@ This tool deliberately focuses on **learning and experimentation rather than bac
 | Risk analytics | Empirical VaR/expected shortfall, Sharpe ratio, volatility, total/annualised return, maximum drawdown | Import CSV, view metrics/drawdown, export metrics |
 
 ## Download the desktop app — Windows, macOS and Linux
+
+**v0.2.1 UI refresh:** tighter spacing, clear numeric inputs without spinner dots, compact plot controls, model-aware fields, better contrast for dropdown menus and consistent light/dark themes.
 
 **[Download the latest version from GitHub Releases](https://github.com/yuvsta1/quantstats-lab/releases/latest)**
 

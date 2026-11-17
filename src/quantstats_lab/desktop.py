@@ -16,6 +16,7 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
     QApplication,
     QComboBox,
     QDoubleSpinBox,
@@ -31,9 +32,13 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QSplitter,
     QStackedWidget,
+    QStyleFactory,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -56,6 +61,7 @@ from . import (
     welch_ttest,
 )
 from .desktop_core import parse_observations, read_return_columns, write_csv
+from .desktop_theme import apply_palette, colours
 
 matplotlib.use("QtAgg")
 
@@ -82,73 +88,130 @@ def logo_pixmap(size: int) -> QPixmap:
     )
 
 
+class CompactDoubleSpinBox(QDoubleSpinBox):
+    """Show significant decimal digits without five trailing zeros or tiny spin arrows."""
+
+    def textFromValue(self, value: float) -> str:
+        text = f"{value:.5f}".rstrip("0").rstrip(".")
+        return "0" if text in {"", "-0"} else text
+
+
+def add_field(form: QFormLayout, label: str, widget: QWidget) -> None:
+    form.addRow(label, widget)
+    field_label = form.labelForField(widget)
+    if field_label is not None:
+        field_label.setObjectName("fieldLabel")
+
+
 def number(form: QFormLayout, label: str, value: float, minimum: float = -1e9, maximum: float = 1e9) -> QDoubleSpinBox:
-    widget = QDoubleSpinBox()
+    widget = CompactDoubleSpinBox()
     widget.setRange(minimum, maximum)
     widget.setDecimals(5)
     widget.setSingleStep(0.05)
+    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
+    widget.setMinimumHeight(30)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     widget.setValue(value)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
 
 
 def whole(form: QFormLayout, label: str, value: int, minimum: int = 1, maximum: int = 10000) -> QSpinBox:
     widget = QSpinBox()
     widget.setRange(minimum, maximum)
+    widget.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+    widget.setAlignment(Qt.AlignmentFlag.AlignRight)
+    widget.setMinimumHeight(30)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
     widget.setValue(value)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
 
 
 def choice(form: QFormLayout, label: str, options: list[str]) -> QComboBox:
     widget = QComboBox()
     widget.addItems(options)
-    form.addRow(label, widget)
+    widget.setMinimumHeight(30)
+    widget.setMaxVisibleItems(8)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+    add_field(form, label, widget)
     return widget
 
 
-def lines(form: QFormLayout, label: str, value: str, height: int = 78) -> QPlainTextEdit:
+def lines(form: QFormLayout, label: str, value: str, height: int = 62) -> QPlainTextEdit:
     widget = QPlainTextEdit()
     widget.setPlainText(value)
     widget.setFixedHeight(height)
-    form.addRow(label, widget)
+    add_field(form, label, widget)
     return widget
 
-
 class Chart(QWidget):
-    """Embedded Matplotlib canvas with built-in pan/zoom/save tools."""
+    """Integrated chart surface with quiet text actions instead of an oversized icon strip."""
 
     def __init__(self) -> None:
         super().__init__()
+        self.setObjectName("plotPanel")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(12, 10, 12, 12)
+        layout.setSpacing(4)
+
         self.figure = Figure(figsize=(8, 5), dpi=100, constrained_layout=True)
         self.canvas = FigureCanvasQTAgg(self.figure)
         self.toolbar = NavigationToolbar2QT(self.canvas, self)
-        layout.addWidget(self.toolbar)
+        self.toolbar.hide()
+
+        tools = QHBoxLayout()
+        tools.setContentsMargins(2, 0, 2, 2)
+        tools.setSpacing(2)
+        caption = QLabel("VISUALISATION")
+        caption.setObjectName("eyebrow")
+        tools.addWidget(caption)
+        tools.addStretch(1)
+        for title, tooltip, callback in (
+            ("Reset", "Reset chart axes", self.toolbar.home),
+            ("Pan", "Drag the plot to pan", self.toolbar.pan),
+            ("Zoom", "Drag over a region to zoom", self.toolbar.zoom),
+            ("Save PNG", "Save the chart as an image", self.toolbar.save_figure),
+        ):
+            action = QToolButton()
+            action.setObjectName("plotTool")
+            action.setText(title)
+            action.setToolTip(tooltip)
+            action.clicked.connect(callback)
+            tools.addWidget(action)
+        layout.addLayout(tools)
         layout.addWidget(self.canvas, 1)
         self.ax = self.figure.add_subplot(111)
         self.dark = True
         self.restyle()
 
     def restyle(self) -> None:
-        fg, bg = ("#DCE8F0", NAVY) if self.dark else ("#23314A", "#FFFFFF")
+        c = colours(self.dark)
+        fg, bg = c["text"], c["chart"]
         self.figure.patch.set_facecolor(bg)
         self.ax.set_facecolor(bg)
-        self.ax.tick_params(colors=fg, labelsize=9)
-        self.ax.xaxis.label.set_color(fg)
-        self.ax.yaxis.label.set_color(fg)
+        self.ax.tick_params(colors=c["muted"], labelsize=9, width=0.7)
+        self.ax.xaxis.label.set_color(c["muted"])
+        self.ax.yaxis.label.set_color(c["muted"])
         self.ax.title.set_color(fg)
         for spine in self.ax.spines.values():
-            spine.set_color("#6C8596" if self.dark else "#C2CED6")
-        self.ax.grid(alpha=0.15, color=fg)
+            spine.set_color(c["border"])
+        self.ax.grid(visible=False, axis="x")
+        self.ax.grid(visible=True, axis="y", alpha=0.38, color=c["grid"], linewidth=0.7)
+        legend = self.ax.get_legend()
+        if legend is not None:
+            legend.get_frame().set_facecolor(bg)
+            legend.get_frame().set_edgecolor(c["border"])
+            for text in legend.get_texts():
+                text.set_color(fg)
         self.canvas.draw_idle()
 
     def clear(self, title: str, xlabel: str, ylabel: str) -> None:
         self.ax.clear()
-        self.ax.set_title(title, loc="left", fontsize=13, pad=18, fontweight="semibold")
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
+        self.ax.set_title(title, loc="left", fontsize=11, pad=10, fontweight="semibold")
+        self.ax.set_xlabel(xlabel, fontsize=9)
+        self.ax.set_ylabel(ylabel, fontsize=9)
 
     def finish(self) -> None:
         self.restyle()
@@ -157,21 +220,23 @@ class Chart(QWidget):
         self.clear(title, "Step", "Simulated value")
         axis = np.arange(paths.shape[1])
         low, med, high = np.quantile(paths, [0.05, 0.50, 0.95], axis=0)
-        self.ax.fill_between(axis, low, high, color=TEAL, alpha=0.20, label="5–95% band")
+        self.ax.fill_between(axis, low, high, color=TEAL, alpha=0.18, label="5–95% band")
         for path in paths[: min(12, len(paths))]:
             self.ax.plot(axis, path, color="#829FB0", alpha=0.17, linewidth=0.8)
-        self.ax.plot(axis, med, color=TEAL, linewidth=2.6, label="Median")
+        self.ax.plot(axis, med, color=TEAL, linewidth=2.3, label="Median")
         self.ax.legend(loc="best", frameon=False, fontsize=9)
         self.finish()
 
 
 class ResearchPage(QWidget):
-    """Reusable split-pane: validated input controls beside an interactive chart."""
+    """Compact research controls with a scrolling parameter area beside the output."""
 
     def __init__(self, title: str, subtitle: str) -> None:
         super().__init__()
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(24, 20, 24, 20)
+        outer.setContentsMargins(18, 15, 18, 18)
+        outer.setSpacing(5)
+
         heading = QLabel(title)
         heading.setObjectName("pageTitle")
         outer.addWidget(heading)
@@ -179,35 +244,59 @@ class ResearchPage(QWidget):
         desc.setWordWrap(True)
         desc.setObjectName("subtitle")
         outer.addWidget(desc)
+
         split = QSplitter(Qt.Orientation.Horizontal)
+        split.setHandleWidth(8)
         controls = QFrame()
         controls.setObjectName("controlPanel")
+        controls.setMinimumWidth(294)
+        controls.setMaximumWidth(384)
         control_layout = QVBoxLayout(controls)
-        control_layout.setContentsMargins(18, 20, 18, 18)
-        group = QGroupBox("Research parameters")
+        control_layout.setContentsMargins(14, 12, 14, 12)
+        control_layout.setSpacing(8)
+
+        group = QGroupBox("RESEARCH PARAMETERS")
         self.form = QFormLayout(group)
-        self.form.setSpacing(12)
-        control_layout.addWidget(group)
+        self.form.setHorizontalSpacing(10)
+        self.form.setVerticalSpacing(8)
+        self.form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        self.form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.form.setFormAlignment(Qt.AlignmentFlag.AlignTop)
+
+        scroller = QScrollArea()
+        scroller.setFrameShape(QFrame.Shape.NoFrame)
+        scroller.setWidgetResizable(True)
+        scroller.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroller.setWidget(group)
+        control_layout.addWidget(scroller, 1)
+
         self.run = QPushButton("Run analysis")
         self.run.setObjectName("primaryButton")
+        self.run.setToolTip("Calculate the model with the current parameters")
         control_layout.addWidget(self.run)
+
+        summary_label = QLabel("RESEARCH OUTPUT")
+        summary_label.setObjectName("eyebrow")
+        control_layout.addWidget(summary_label)
         self.summary = QPlainTextEdit()
         self.summary.setObjectName("summary")
         self.summary.setReadOnly(True)
-        self.summary.setMinimumHeight(110)
-        self.summary.setPlainText("Set parameters, then run an analysis.")
+        self.summary.setFixedHeight(115)
+        self.summary.setPlainText("Use Run analysis to refresh this model.")
         control_layout.addWidget(self.summary)
-        self.export = QPushButton("Export results as CSV…")
+
+        self.export = QPushButton("Export CSV…")
+        self.export.setToolTip("Save results to a CSV file")
         self.export.setEnabled(False)
         control_layout.addWidget(self.export)
-        control_layout.addStretch(1)
+
         self.chart = Chart()
+        self.chart.setMinimumWidth(370)
         split.addWidget(controls)
         split.addWidget(self.chart)
-        split.setSizes([375, 780])
+        split.setSizes([330, 820])
         split.setStretchFactor(1, 2)
         outer.addWidget(split, 1)
-
 
 class MainWindow(QMainWindow):
     LABELS = ["Distributions", "Monte Carlo", "Statistical inference", "Stochastic processes", "Risk analytics", "About"]
@@ -216,24 +305,29 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("QuantStats Lab")
         self.setWindowIcon(QIcon(logo_pixmap(256)))
-        self.resize(1340, 830)
-        self.setMinimumSize(920, 650)
+        self.resize(1190, 735)
+        self.setMinimumSize(930, 610)
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyle(QStyleFactory.create("Fusion"))
         self.dark = True
         self.exports: dict[str, tuple[list[str], list[list[object]]]] = {}
         self.returns = np.random.default_rng(42).normal(0.0003, 0.012, size=504)
         self.returns_label = "Synthetic demonstration returns (not market data)"
         root = QWidget()
+        root.setObjectName("centralRoot")
         self.setCentralWidget(root)
         layout = QHBoxLayout(root)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(225)
+        sidebar.setFixedWidth(184)
         side_layout = QVBoxLayout(sidebar)
-        side_layout.setContentsMargins(16, 24, 16, 20)
+        side_layout.setContentsMargins(11, 14, 11, 12)
+        side_layout.setSpacing(5)
         brand = QLabel()
-        brand.setPixmap(logo_pixmap(82))
+        brand.setPixmap(logo_pixmap(56))
         brand.setAlignment(Qt.AlignmentFlag.AlignCenter)
         side_layout.addWidget(brand)
         name = QLabel("QUANTSTATS LAB")
@@ -244,23 +338,32 @@ class MainWindow(QMainWindow):
         tagline.setObjectName("brandTagline")
         tagline.setAlignment(Qt.AlignmentFlag.AlignCenter)
         side_layout.addWidget(tagline)
-        side_layout.addSpacing(24)
+        side_layout.addSpacing(18)
         self.navigation = QListWidget()
         self.navigation.addItems(self.LABELS)
         self.navigation.setObjectName("navigation")
+        self.navigation.setSpacing(1)
         side_layout.addWidget(self.navigation, 1)
-        side_layout.addWidget(QLabel("REPRODUCIBLE SEED"))
+        seed_label = QLabel("REPRODUCIBLE SEED")
+        seed_label.setObjectName("sidebarCaption")
+        side_layout.addWidget(seed_label)
         self.seed = QSpinBox()
         self.seed.setRange(0, 2_147_483_647)
         self.seed.setValue(42)
+        self.seed.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
+        self.seed.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.seed.setMinimumHeight(30)
         side_layout.addWidget(self.seed)
-        side_layout.addSpacing(14)
+        side_layout.addSpacing(9)
         self.theme_switch = QPushButton("Switch to light mode")
         self.theme_switch.clicked.connect(self.toggle_theme)
         side_layout.addWidget(self.theme_switch)
-        side_layout.addWidget(QLabel("Local processing  •  No account needed"))
+        status = QLabel("OFFLINE-READY  ·  NO ACCOUNT")
+        status.setObjectName("sidebarCaption")
+        side_layout.addWidget(status)
         layout.addWidget(sidebar)
         self.stack = QStackedWidget()
+        self.stack.setObjectName("workPages")
         layout.addWidget(self.stack, 1)
         self.pages: dict[str, ResearchPage] = {}
         self._distributions()
@@ -269,9 +372,16 @@ class MainWindow(QMainWindow):
         self._processes()
         self._risk()
         self._about()
-        self.navigation.currentRowChanged.connect(self.stack.setCurrentIndex)
-        self.navigation.setCurrentRow(0)
+        self.navigation.currentRowChanged.connect(self.show_page)
         self.apply_theme()
+        self.navigation.setCurrentRow(0)
+
+    def show_page(self, index: int) -> None:
+        """Render a useful default chart when a research page first opens."""
+        self.stack.setCurrentIndex(index)
+        keys = ("distributions", "simulation", "inference", "processes", "risk")
+        if 0 <= index < len(keys) and keys[index] not in self.exports:
+            self.calculate(keys[index])
 
     def add_page(self, key: str, title: str, subtitle: str) -> ResearchPage:
         page = ResearchPage(title, subtitle)
@@ -291,6 +401,7 @@ class MainWindow(QMainWindow):
             "normal", "student_t", "binomial", "poisson", "exponential", "lognormal",
         ])
         self.dist_parameters = QStackedWidget()
+        self.dist_parameters.setObjectName("parameterStack")
         specs = [
             [("mean", 0.0, -1e6, 1e6), ("std", 1.0, 0.0001, 1e6)],
             [("df", 5.0, 0.0001, 1e6), ("loc", 0.0, -1e6, 1e6), ("scale", 1.0, 0.0001, 1e6)],
@@ -302,7 +413,12 @@ class MainWindow(QMainWindow):
         self.dist_inputs: list[dict[str, QDoubleSpinBox | QSpinBox]] = []
         for i, fields in enumerate(specs):
             panel = QWidget()
+            panel.setObjectName("parameterPanel")
             form = QFormLayout(panel)
+            form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+            form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            form.setHorizontalSpacing(10)
+            form.setVerticalSpacing(7)
             mapping = {}
             for field, default, minimum, maximum in fields:
                 if i == 2 and field == "n":
@@ -328,6 +444,16 @@ class MainWindow(QMainWindow):
         self.sim_steps = whole(page.form, "Steps", 252, 1, 2520)
         self.sim_paths = whole(page.form, "Paths", 500, 1, 20000)
         self.sim_observations = lines(page.form, "Bootstrap returns (decimals)", "0.012, -0.009, 0.003, 0.004")
+        self.sim_type.currentIndexChanged.connect(lambda _index: self.update_simulation_fields())
+        self.update_simulation_fields()
+
+    def update_simulation_fields(self) -> None:
+        """Display only the parameters used by the currently selected model."""
+        form = self.pages["simulation"].form
+        bootstrap = self.sim_type.currentIndex() == 1
+        form.setRowVisible(self.sim_drift, not bootstrap)
+        form.setRowVisible(self.sim_volatility, not bootstrap)
+        form.setRowVisible(self.sim_observations, bootstrap)
 
     def _inference(self) -> None:
         page = self.add_page(
@@ -356,6 +482,14 @@ class MainWindow(QMainWindow):
         self.proc_vol = number(page.form, "Volatility / innovation std", 0.6, 0)
         self.proc_steps = whole(page.form, "Steps", 252, 1, 2520)
         self.proc_paths = whole(page.form, "Paths", 100, 1, 20000)
+        self.proc_type.currentIndexChanged.connect(lambda _index: self.update_process_fields())
+        self.update_process_fields()
+
+    def update_process_fields(self) -> None:
+        form = self.pages["processes"].form
+        is_ou = self.proc_type.currentIndex() == 0
+        form.setRowVisible(self.proc_theta, is_ou)
+        form.setRowVisible(self.proc_phi, not is_ou)
 
     def _risk(self) -> None:
         page = self.add_page(
@@ -603,33 +737,8 @@ class MainWindow(QMainWindow):
         self.apply_theme()
 
     def apply_theme(self) -> None:
-        fg = "#E9F5F9" if self.dark else "#172338"
-        bg = "#071A32" if self.dark else "#F2F6F8"
-        control = "#102B46" if self.dark else "#FFFFFF"
-        stroke = "#31536B" if self.dark else "#CCD8E0"
-        self.setStyleSheet(f"""
-            QMainWindow, QWidget {{ background: {bg}; color: {fg}; font-size: 13px; }}
-            QFrame#sidebar {{ background: {NAVY}; color: #ECF7FA; }}
-            QFrame#sidebar QLabel {{ background: transparent; color: #C5E3E6; }}
-            QLabel#brandName {{ font-size: 16px; font-weight: 800; color: #FFFFFF; letter-spacing: 1px; }}
-            QLabel#brandTagline {{ font-size: 9px; color: {TEAL}; }}
-            QLabel#pageTitle {{ font-size: 28px; font-weight: bold; }}
-            QLabel#subtitle {{ color: {"#A9C2CF" if self.dark else "#566678"}; margin-bottom: 8px; }}
-            QListWidget#navigation {{ background: transparent; border: none; color: #C8E2EA; font-size: 13px; }}
-            QListWidget#navigation::item {{ padding: 13px; border-radius: 8px; }}
-            QListWidget#navigation::item:selected {{ background: #145463; color: #FFFFFF; }}
-            QFrame#controlPanel {{ border: 1px solid {stroke}; border-radius: 12px; }}
-            QGroupBox {{ font-weight: 600; border: 0; margin-top: 13px; padding-top: 8px; }}
-            QGroupBox::title {{ subcontrol-origin: margin; left: 0px; }}
-            QDoubleSpinBox, QSpinBox, QComboBox, QPlainTextEdit {{
-                background: {control}; color: {fg}; border: 1px solid {stroke};
-                border-radius: 6px; padding: 7px; selection-background-color: {TEAL};
-            }}
-            QPushButton {{ background: {control}; border: 1px solid {stroke}; padding: 10px; border-radius: 7px; }}
-            QPushButton:hover {{ border: 1px solid {TEAL}; }}
-            QPushButton#primaryButton {{ background: #199D98; color: #FFFFFF; font-weight: bold; border: none; }}
-            QPushButton:disabled {{ color: #849BAA; }}
-        """)
+        """Apply a whole-window palette, including popups and embedded plots."""
+        apply_palette(self, self.dark)
         for page in self.pages.values():
             page.chart.dark = self.dark
             page.chart.restyle()

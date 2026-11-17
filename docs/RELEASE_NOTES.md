@@ -1,20 +1,22 @@
-# QuantStats Lab v0.2.0 — First cross-platform desktop release
+# QuantStats Lab v0.2.1 — Compact workstation interface
 
-QuantStats Lab is now a **real desktop application** for Windows, Mac (Apple Silicon and Intel), and Linux.
+This update improves usability on Windows, macOS and Linux using the user's screen recording as a real-world design reference.
 
-- Windows x64 downloadable executable (`.exe`)
-- macOS Apple Silicon and Intel app ZIPs (`.app` inside)
-- Ubuntu/Debian Linux x64 GUI-installable `.deb` package and portable `.tar.gz` bundle
-- Native PySide6 application window, no Streamlit server or browser
-- Original QuantStats Lab navy-and-turquoise logo as the application icon
-- Distribution explorer, Monte Carlo simulation, inference, OU/AR(1) processes and risk analytics
-- Plot zoom/pan/export, local CSV import/export, dark/light modes
-- Bundled Python runtime (Python does not need to be installed separately)
-- Tested Python 3.15 support, alongside earlier supported versions
-- Automated packaging and startup checks on each supported OS
+- Cleaner, narrower left navigation and less wasted space throughout the research workstation
+- Numeric inputs show meaningful digits instead of trailing zeroes; tiny spinner arrows/dots are hidden
+- Reworked dropdowns with readable native popup palettes in both light and dark modes
+- Simplified charts: compact text controls for Reset, Pan, Zoom and Save PNG replace oversized toolbar icons
+- Consistent muted labels, borders and accessible contrast across the UI and plots
+- Context-sensitive Monte Carlo and stochastic-process inputs; irrelevant parameters no longer clutter the panel
+- Initial research chart renders when navigating to a tool
+- Scrollable parameter sections for smaller screens while exports and result summaries remain visible
+- New headless Qt tests for input formatting, theme contrast, toolbar behaviour and conditional inputs
+- All quantitative calculation APIs and reproducibility logic preserved
 
-**Security notice:** These are unsigned development binaries and macOS downloads are not Apple-notarised. Operating systems may issue security warnings; do not disable security controls system-wide. Manual user-machine validation is still recommended.
+Cross-platform standalone application downloads contain their own Python runtime. No manual Python installation is necessary.
 
-The research engine is open source and not an investment recommendation or a forecasting service. Consult `docs/MATH.md` for assumptions.
+**Distribution limitations:** macOS builds are not Apple-notarised; Windows builds are unsigned. Your operating system might prompt you to confirm the publisher. Review the project source and checksums. Automated smoke tests do not replace manual testing on real hardware.
+
+**Quantitative limitation:** the tools are educational/research calculations, not investment advice or market forecasts.
 
 Created by Yuvi with the assistance of AI (OpenAI ChatGPT) for software development, testing, and documentation.
