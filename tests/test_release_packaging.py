@@ -1,7 +1,6 @@
 """The release filenames and metadata must remain internally consistent."""
 
 from quantstats_lab import __version__
-
 from scripts.build_desktop_release import asset_filename, project_version
 
 
