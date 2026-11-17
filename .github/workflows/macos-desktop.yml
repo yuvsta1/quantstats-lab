@@ -48,6 +48,8 @@ jobs:
           test -d "dist/QuantStats Lab.app"
           test -x "dist/QuantStats Lab.app/Contents/MacOS/QuantStats Lab"
           plutil -lint "dist/QuantStats Lab.app/Contents/Info.plist"
+      - name: Exercise packaged native app startup
+        run: 'QT_QPA_PLATFORM=offscreen "dist/QuantStats Lab.app/Contents/MacOS/QuantStats Lab" --smoke-test'
       - name: Create downloadable zip
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
