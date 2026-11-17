@@ -19,7 +19,7 @@ def test_gbm_expectation_analytical_benchmark():
 
 
 def test_gbm_seed_and_independent_runs():
-    args = dict(initial=100, annual_drift=0.03, annual_volatility=0.2, steps=10, paths=5)
+    args = {"initial": 100, "annual_drift": 0.03, "annual_volatility": 0.2, "steps": 10, "paths": 5}
     a = geometric_brownian_motion(**args, seed=4)
     b = geometric_brownian_motion(**args, seed=4)
     c = geometric_brownian_motion(**args, seed=5)
@@ -53,7 +53,7 @@ def test_bootstrap_single_total_loss_is_absorbing():
     ],
 )
 def test_gbm_invalid_inputs(changes):
-    kwargs = dict(initial=100, annual_drift=0.03, annual_volatility=0.2, steps=5, paths=5)
+    kwargs = {"initial": 100, "annual_drift": 0.03, "annual_volatility": 0.2, "steps": 5, "paths": 5}
     kwargs.update(changes)
     with pytest.raises(ValueError):
         geometric_brownian_motion(**kwargs)
