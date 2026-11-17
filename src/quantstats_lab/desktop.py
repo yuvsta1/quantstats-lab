@@ -13,8 +13,8 @@ import matplotlib
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -54,6 +54,7 @@ from . import (
     t_mean_interval,
     welch_ttest,
 )
+from . import __version__
 from .desktop_core import parse_observations, read_return_columns, write_csv
 
 matplotlib.use("QtAgg")
@@ -394,6 +395,11 @@ class MainWindow(QMainWindow):
         info.setWordWrap(True)
         info.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(info)
+        update_button = QPushButton("See latest downloadable version on GitHub")
+        update_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://github.com/yuvsta1/quantstats-lab/releases/latest"))
+        )
+        layout.addWidget(update_button)
         layout.addStretch(1)
         self.stack.addWidget(page)
 
